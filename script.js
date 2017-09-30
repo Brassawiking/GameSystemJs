@@ -5,5 +5,5 @@ document.registerElement('game-system', {
 })
 
 function created(element) {
-  element.innerHTML = 'GAME SYSTEM JS'
+  element.innerHTML = 'GAME SYSTEM JS, Yeah!'
 }
