@@ -1,6 +1,5 @@
 game-system {
   display: inline-block;
-  background: red;
-  color: #fff;
-  padding: 5px;
+  margin-top: 30px;
+  border: 1px solid black;
 }
