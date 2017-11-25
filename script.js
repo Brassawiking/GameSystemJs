@@ -11,8 +11,6 @@ function create$$(element) {
       
   element.setAttribute('tabindex', '0');
   
-  //document.body.appendChild(document.createElement('input'));
-  //document.body.appendChild(document.createElement('textarea'));
 
   var canvas = document.createElement('canvas');
   canvas.width = width;
@@ -54,7 +52,19 @@ function create$$(element) {
     0xd8e699,
   ]
 
-  var tiles = new Array(256); 
+  var tiles = new Array(256);
+  for (var i = 0; i < tiles.length ; ++i) {
+    tiles[i] = [
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+      0, 0, 0, 0, 0, 0, 0, 0,
+    ]
+  }
 
   /*
   tiles[0] = [
@@ -338,6 +348,10 @@ function create$$(element) {
   vram[32 * 6 + 2] = 12
 */
   var vram = new Array(32*32);
+  for (var i = 0; i < vram.length ; ++i) {
+    vram[i] = 0;
+  }
+  
 
   var pixelBuffer = ctx.createImageData(width, height);
   for (var i = 0; i < width*height; ++i) {
@@ -434,6 +448,7 @@ function create$$(element) {
       posY -= 1;
     }
     
+    var fallbackTile = [];
     for(var n = 0; n < layers ; ++n) {
       for (var y=0; y < height;++y) {    
 
@@ -454,10 +469,10 @@ function create$$(element) {
           var y1 = y + scrollY;
             
           var tileIndex = vram[((x1 >> 3) & 0x1f) + (((y1 >> 3) & 0x1f) << 5)] || 0;
-          var tile = tiles[tileIndex] || []; // fallback temp tile
+          var tile = tiles[tileIndex];
       
           var colorIndex = tile[(x1 & 0x7) + ((y1 & 0x7) << 3)];
-          var color = palette[colorIndex] || palette[0] //fallback color; 
+          var color = palette[colorIndex]; 
             
           var i = (x + y * width) << 2;
           pixelBuffer.data[i+0] = (color >> 16) & 0xff;
