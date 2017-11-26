@@ -177,7 +177,7 @@ function create$$(element) {
       posY -= 1;
     }
     
-  for(var n = 0; n < 5 ; ++n) {
+  for(var n = 0; n < 10 ; ++n) {
       for (var y=0; y < height;++y) {    
 
         //c = Math.sin((2*y/height) + (dt / 20)) * 40;
