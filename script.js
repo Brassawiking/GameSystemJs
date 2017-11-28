@@ -44,6 +44,8 @@ function create$$(element) {
    0x274531,
   ]
 
+  HSYNC = 0x7ffe;
+  VSYNC = 0x7fff;
   VRAM = 0x8000;
   CHAR = 0x8000;
   BGMAP1 = 0x9800;
@@ -58,8 +60,6 @@ function create$$(element) {
    pixelBuffer.data[(i*4)+3] = 0xff;
   }
   
-  var c = 0;
-  var dt = 0;
   var posX = -3;
   var posY = -3;
   
@@ -123,6 +123,8 @@ function create$$(element) {
       'dma',
       'cb64', 
       'm',
+      'HSYNC',
+      'VSYNC',
       'VRAM',
       'BGMAP1',
       'BGMAP2',
@@ -143,6 +145,8 @@ function create$$(element) {
           return atob(base64Values).split('').map(function (c) { return c.charCodeAt(0); });
         },
         memorySpace,
+        HSYNC,
+        VSYNC,
         VRAM,
         BGMAP1,
         BGMAP2,
@@ -161,9 +165,7 @@ function create$$(element) {
   
   requestAnimationFrame(function update() {
     var t1 = performance.now();
-    dt++;
-    //c--;
-    
+   
     if (keys.right) {
       posX += 1;
     }
@@ -177,20 +179,14 @@ function create$$(element) {
       posY -= 1;
     }
     
-  for(var n = 0; n < 10 ; ++n) {
+    memorySpace[VSYNC] && memorySpace[VSYNC](); 
+    
+    
+    for(var n = 0; n < 10 ; ++n) {
       for (var y=0; y < height;++y) {    
 
-        //c = Math.sin((2*y/height) + (dt / 20)) * 40;
-
-        memorySpace[SCX] = y % 2 ? c : c;
-        memorySpace[SCY] = c;
-        
-        if (y % 8 == 0) {
-          //var temp = palette[3];
-          //palette[3] = palette[2]
-          //palette[2] = temp;
-       }
-        
+        memorySpace[HSYNC] && memorySpace[HSYNC](y, height); 
+              
         for (var x=0 ; x < width ; ++x) {
           var x1 = x + memorySpace[SCX]; // Cache before, reduce read
           var y1 = y + memorySpace[SCY]; // Cache before, reduce read

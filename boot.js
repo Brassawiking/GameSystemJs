@@ -17,7 +17,21 @@ for(i=0;i<2;++i) {
   }
 }
 
+m[SCX] = 0;
+m[SCY] = 0;
+var c = 0;
+var dt = 0;
 
+m[HSYNC] = function (y, height) {
+ c = Math.sin((2*y/height) + (dt / 20)) * 40;
+
+  m[SCX] = y % 2 ? c : c;
+  m[SCY] = c;
+}
+
+m[VSYNC] = function (y, height) {
+  dt++;
+}
 
 dma(CHAR+16, [
 scaleUp(l2[0],1),scaleUp(l2[0]), 
