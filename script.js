@@ -59,54 +59,6 @@ function create$$(element) {
   for (var i = 0; i < width*height; ++i) {
    pixelBuffer.data[(i*4)+3] = 0xff;
   }
-  
-  var posX = -3;
-  var posY = -3;
-  
-  var keys = {
-    up: false,
-    down: false,
-    left: false,
-    right: false,
-    a: false,
-    b: false,
-    start: false,
-    select: false,
-  }
-  
-  document.addEventListener('keydown', function (e) {
-    debug.innerHTML = 'DOWN:' + e.keyCode + e.code + e.which + e.key + e.charCode + e.char;
-    e.preventDefault();
-    
-    switch(e.key) {
-      case 'w': keys.up = true; break; 
-      case 's': keys.down = true; break; 
-      case 'a': keys.left = true; break; 
-      case 'd': keys.right = true; break; 
-      case 'j': keys.a = true; break; 
-      case 'k': keys.b = true; break; 
-      case 'e': keys.start = true; break; 
-      case 'q': keys.select = true; break; 
-    }
-
- }, true);
-
-  document.addEventListener('keyup', function (e) {
-    debug.innerHTML = 'UP:' + e.keyCode + e.code + e.which + e.key + e.charCode + e.char;
-    e.preventDefault();
-    
-    switch(e.key) {
-      case 'w': keys.up = false; break; 
-      case 's': keys.down = false; break; 
-      case 'a': keys.left = false; break; 
-      case 'd': keys.right = false; break; 
-      case 'j': keys.a = false; break; 
-      case 'k': keys.b = false; break; 
-      case 'e': keys.start = false; break; 
-      case 'q': keys.select = false; break; 
-    }
- }, true);
-
 
   function reqListener () {
     if (this.responseText.length > 256) {
@@ -165,20 +117,7 @@ function create$$(element) {
   
   requestAnimationFrame(function update() {
     var t1 = performance.now();
-   
-    if (keys.right) {
-      posX += 1;
-    }
-    if (keys.left) {
-      posX -= 1;
-    }
-    if (keys.down) {
-      posY += 1;
-    }
-    if (keys.up) {
-      posY -= 1;
-    }
-    
+  
     memorySpace[VSYNC] && memorySpace[VSYNC](); 
     
     
@@ -236,9 +175,7 @@ function create$$(element) {
     */
 
     ctx.putImageData(pixelBuffer, 0, 0);  
-   
-    //debug.innerHTML = 'KEYS: ' + JSON.stringify(keys);
-   
+  
     fps.innerHTML = Math.round((performance.now() - t1)) + 'ms'
     requestAnimationFrame(update);
   }); 
