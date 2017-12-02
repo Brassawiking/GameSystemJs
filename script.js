@@ -71,6 +71,9 @@ function create$$(element) {
     }
     
     (new Function(
+      'F',
+      'I',
+      'J',
       'debug',
       'dma',
       'cb64', 
@@ -85,15 +88,16 @@ function create$$(element) {
       'SCX',
       'BGP',
       this.responseText)(
-        function (msg) { 
-          debug.innerHTML = msg; 
-        },
-        function (address, values) {
+        (a,b) => a.forEach(b),
+        (a,b) => {for(var i=0;i<a;++i)b(i)},
+        (a,b,c) => {for(var i=0;i<a;++i){for(var j=0;j<b;++j)c(i,j)}},
+        (msg) => {debug.innerHTML = msg;},
+        (address, values) => {
           for (var i = 0, l = values.length; i < l ; ++i) {
             memorySpace[address + i] = values[i]; 
           } 
         },
-        function (base64Values) {
+        (base64Values) => {
           return atob(base64Values).split('').map(function (c) { return c.charCodeAt(0); });
         },
         memorySpace,
