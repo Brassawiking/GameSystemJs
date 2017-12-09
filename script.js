@@ -52,6 +52,10 @@ function create$$(element) {
   
   
   var memorySpace = new Array(0xffff);
+  for (var i=0,l=memorySpace.length; i<l;++i){
+    memorySpace[i] = 0;
+  }
+  
   
   var colors = [
    0xd8e699,  
@@ -81,13 +85,17 @@ function create$$(element) {
       return atob(base64Values).split('').map(function (c) { return c.charCodeAt(0); });
     };
   
+    var debugMsg = (msg) => {debug.innerHTML = msg;}
+  
     var l = cb64('zu1mZswNAAsDcwCDAAwADQAIER+IiQAO3Mxu5t3d2Zm7u2djbg7szN3cmZ+7uTM+');
     var r = cb64('PEK5pbmlQjw=');
-  
-    var size = this.responseText.length + l.length + r.length 
+    
+   var size = this.responseText.length + l.length + r.length 
     if (size > 256) {
       console.error('boot.js too big: ' + (size - 256) + ' bytes over')
       //return;
+    } else {
+      console.log('boot.js: ' + size + ' bytes')
     }
     
     for (var i = 0; i < 256; ++i) {
@@ -113,11 +121,18 @@ function create$$(element) {
       'Y',
       'X',
       'P',
+      'K',
+      'D',
+      'h',
+      'G',
+      'T',
+      'U',
+      'z',
       this.responseText)(
         (a,b) => a.forEach(b),
         (a,b) => {for(var i=0;i<a;++i){window.i=i;b(i)}},
         (a,b,c) => {for(var i=0;i<a;++i){for(var j=0;j<b;++j){window.i=i;window.j=j;c(i,j)}}},
-        (msg) => {debug.innerHTML = msg;},
+        debugMsg,
         (address, values) => {
           for (var i = 0, l = values.length; i < l ; ++i) {
             memorySpace[address + i] = values[i]; 
@@ -135,7 +150,14 @@ function create$$(element) {
         CHAR,
         SCY,
         SCX,
-        BGP
+        BGP,
+        252,
+        BGMAP1+16,
+        CHAR+16,
+        BGMAP1+4,
+        32,
+        12,
+        2
       ));
   }
 
