@@ -105,8 +105,8 @@ function create$$(element) {
       '_P',
       this.responseText)(
         (a,b) => a.forEach(b),
-        (a,b) => {for(var i=0;i<a;++i)b(i)},
-        (a,b,c) => {for(var i=0;i<a;++i){for(var j=0;j<b;++j)c(i,j)}},
+        (a,b) => {for(var i=0;i<a;++i){window.i=i;b(i)}},
+        (a,b,c) => {for(var i=0;i<a;++i){for(var j=0;j<b;++j){window.i=i;window.j=j;c(i,j)}}},
         (msg) => {debug.innerHTML = msg;},
         (address, values) => {
           for (var i = 0, l = values.length; i < l ; ++i) {
