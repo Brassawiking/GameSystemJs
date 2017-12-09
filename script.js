@@ -1,3 +1,20 @@
+requestAnimationFrame(function () {
+document.body.innerHTML = `
+<game-system 
+  video-width="160"
+  video-height="144"
+  >
+ 
+ 
+
+  <cpu></cpu>
+  <rom size="256" src="boot.js"></rom>
+  <memory-map bit="16"></memory-map>
+
+</game-system>
+`
+})
+
 document.registerElement('game-system', {
   prototype: Object.create(HTMLElement.prototype, {
     createdCallback: { value: function () { return create$$(this); } }
@@ -5,13 +22,12 @@ document.registerElement('game-system', {
 })
 
 function create$$(element) {
-  var width = 160 | 0,
-      height = 144 | 0,
+  var width = parseInt(element.getAttribute('video-width')) | 0,
+      height = parseInt(element.getAttribute('video-height')) | 0,
       scale = 3;
       
   element.setAttribute('tabindex', '0');
   
-
   var canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
