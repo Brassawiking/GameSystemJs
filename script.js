@@ -92,7 +92,7 @@ function create$$(element) {
       'J',
       'debug',
       'dma',
-      'cb64', 
+      'C', 
       'm',
       'HSYNC',
       'VSYNC',

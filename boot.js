@@ -5,8 +5,8 @@ m[SCX]=m[SCY]=-30
 z=2
 J(2,12,(i,j)=>m[BGMAP1+j+i*32]=z++)
 m[38924]=1
-l=cb64('zu1mZswNAAsDcwCDAAwADQAIER+IiQAO3Mxu5t3d2Zm7u2djbg7szN3cmZ+7uTM+')
-r=cb64('PEK5pbmlQjw=')
+l=C('zu1mZswNAAsDcwCDAAwADQAIER+IiQAO3Mxu5t3d2Zm7u2djbg7szN3cmZ+7uTM+')
+r=C('PEK5pbmlQjw=')
 h=32784
 F(r,b=>W(b,7,6,5,4)|W(b,3,2,1,0))
 F(l,b=>J(2,2,i=>W(b,a=7-4*i,a,--a,a)|W(b,--a,a,--a,a)))
