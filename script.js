@@ -77,8 +77,16 @@ function create$$(element) {
   }
 
   function reqListener () {
-    if (this.responseText.length > 256) {
-      console.error('boot.js too big: ' + (this.responseText.length - 256) + ' bytes over')
+    var cb64 = (base64Values) => {
+      return atob(base64Values).split('').map(function (c) { return c.charCodeAt(0); });
+    };
+  
+    var l = cb64('zu1mZswNAAsDcwCDAAwADQAIER+IiQAO3Mxu5t3d2Zm7u2djbg7szN3cmZ+7uTM+');
+    var r = cb64('PEK5pbmlQjw=');
+  
+    var size = this.responseText.length + l.length + r.length 
+    if (size > 256) {
+      console.error('boot.js too big: ' + (size - 256) + ' bytes over')
       //return;
     }
     
@@ -94,15 +102,17 @@ function create$$(element) {
       'dma',
       'C', 
       'm',
-      '_H',
-      '_V',
+      'l',
+      'r',
+      'H',
+      'V',
       '_VR',
-      '_B1',
-      '_B2',
-      '_C',
-      '_Y',
-      '_X',
-      '_P',
+      'B',
+      'B2',
+      'C',
+      'Y',
+      'X',
+      'P',
       this.responseText)(
         (a,b) => a.forEach(b),
         (a,b) => {for(var i=0;i<a;++i){window.i=i;b(i)}},
@@ -111,12 +121,12 @@ function create$$(element) {
         (address, values) => {
           for (var i = 0, l = values.length; i < l ; ++i) {
             memorySpace[address + i] = values[i]; 
-          } 
+          }
         },
-        (base64Values) => {
-          return atob(base64Values).split('').map(function (c) { return c.charCodeAt(0); });
-        },
+        cb64,
         memorySpace,
+        l,
+        r,
         HSYNC,
         VSYNC,
         VRAM,
