@@ -1,7 +1,7 @@
 W=(x,a,b,c,d)=>m[h++]=192*(x>>a&1)+48*(x>>b&1)+12*(x>>c&1)+3*(x>>d&1)
 I(8192,i=>m[VRAM+i]=0)
 m[BGP]=252
-m[SCX]=m[SCY]=0
+m[SCX]=m[SCY]=-30
 z=2
 J(2,12,(i,j)=>m[BGMAP1+j+i*32]=z++)
 m[38924]=1
@@ -10,6 +10,4 @@ r=cb64('PEK5pbmlQjw=')
 h=32784
 F(r,b=>W(b,7,6,5,4)|W(b,3,2,1,0))
 F(l,b=>J(2,2,i=>W(b,a=7-4*i,a,--a,a)|W(b,--a,a,--a,a)))
-c=dt=0
-m[HSYNC]=(y,h)=>{c=Math.sin(2*y/h+dt/20)*40-40;m[SCX]=(y%2?c:c);m[SCY]=c}
-m[VSYNC]=()=>dt++
+m[VSYNC]=_=>--m[SCY]
