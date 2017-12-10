@@ -3,6 +3,7 @@ document.body.innerHTML = `
 <game-system 
   video-width="160"
   video-height="144"
+  video-scale="3"
   >
  
  
@@ -24,7 +25,7 @@ document.registerElement('game-system', {
 function create$$(element) {
   var width = parseInt(element.getAttribute('video-width')) | 0,
       height = parseInt(element.getAttribute('video-height')) | 0,
-      scale = 3;
+      scale = parseInt(element.getAttribute('video-scale')) | 0;
       
   element.setAttribute('tabindex', '0');
   
@@ -39,6 +40,7 @@ function create$$(element) {
   fps.style.position = 'fixed';
   fps.style.top = '0';
   fps.style.right = '0';
+  fps.style.textAlign = 'right';
   element.appendChild(fps);
 
   var debug = document.createElement('div');
@@ -168,28 +170,32 @@ function create$$(element) {
 
   
   requestAnimationFrame(function update() {
-    var t1 = performance.now();
+    var t0 = performance.now();
   
     memorySpace[VSYNC] && memorySpace[VSYNC](); 
-    
-    
+       
     for(var n = 0; n < 10 ; ++n) {
       for (var y=0; y < height;++y) {    
 
         memorySpace[HSYNC] && memorySpace[HSYNC](y, height); 
+        
+        var scx = memorySpace[SCX];
+        var scy = memorySpace[SCY];
+        var bgp = memorySpace[BGP];
               
+        var y1 = y + scy;
+
         for (var x=0 ; x < width ; ++x) {
-          var x1 = x + memorySpace[SCX]; // Cache before, reduce read
-          var y1 = y + memorySpace[SCY]; // Cache before, reduce read
-            
+          var x1 = x + scx;
+           
           var tileIndex = memorySpace[BGMAP1 + ((x1 >> 3) & 31) + (((y1 >> 3) & 31) << 5)];
-          
-          var tileRowIndex = CHAR + (tileIndex*16) + ((y1 & 7) << 1);
-          var tileRow16 = (memorySpace[tileRowIndex] << 8) + memorySpace[tileRowIndex+1];  
-          var colorIndex = (tileRow16 >> ((7 - (x1 & 7)) << 1)) & 3;     
-          var color = colors[(memorySpace[BGP] >> (colorIndex * 2)) & 3]; // Cache BGP before, reduce read
+          var tileByteIndex = CHAR + (tileIndex*16) + ((y1 & 7) << 1) + ((x1 >> 2) & 1);
+          var tileByte = memorySpace[tileByteIndex];
+          var colorIndex = (tileByte >> ((3 - (x1 & 3)) << 1)) & 3;
+          var color = colors[(bgp >> (colorIndex << 1)) & 3]
             
           var i = (x + y * width) << 2;
+          //clamping should remove need for masking?
           pixelBuffer.data[i+0] = (color >> 16) & 255;
           pixelBuffer.data[i+1] = (color >> 8) & 255;
           pixelBuffer.data[i+2] = (color) & 255;
@@ -226,18 +232,14 @@ function create$$(element) {
     
     */
 
+    var t1 = performance.now();
     ctx.putImageData(pixelBuffer, 0, 0);  
+    var t2 = performance.now();
   
-    fps.innerHTML = Math.round((performance.now() - t1)) + 'ms'
+    fps.innerHTML = Math.round(t2 - t0) + 'ms<br/>' + Math.round(100*(t2 - t1)/(t2 - t0)) + '% put'
     requestAnimationFrame(update);
   }); 
 }
-
-
-
-
-
-
 
 
 
