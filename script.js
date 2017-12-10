@@ -23,6 +23,15 @@ document.registerElement('game-system', {
 })
 
 function create$$(element) {
+  powerOn(element);
+  document.addEventListener('touchstart', function init() {
+    //powerOn(element);
+    document.removeEventListener('touchstart', init, true)
+  }, true);
+}
+
+function powerOn(element) {
+
   var width = parseInt(element.getAttribute('video-width')) | 0,
       height = parseInt(element.getAttribute('video-height')) | 0,
       scale = parseInt(element.getAttribute('video-scale')) | 0;
@@ -75,12 +84,43 @@ function create$$(element) {
   
   SCY = 0xFF42;
   SCX = 0xFF43;
+  LY = 0xFF44;
+  LYC = 0xFF45;
+  
+  WY = 0xFF4A;
+  WX = 0xFF4B;
+  
   BGP = 0xFF47;
 
   var pixelBuffer = ctx.createImageData(width, height);
   for (var i = 0; i < width*height; ++i) {
-   pixelBuffer.data[(i*4)+3] = 0xff;
+    pixelBuffer.data[(i*4)+3] = 0xff;
   }
+
+  var audio = new (window.AudioContext || window.webkitAudioContext)();
+  var oscillator = audio.createOscillator();
+  var gain = audio.createGain();
+  
+  oscillator.connect(gain);
+  gain.connect(audio.destination);
+  
+  oscillator.type = 'sine';
+  oscillator.frequency.value = 0;
+  gain.gain.value = 0.1
+
+
+  oscillator.start();
+
+  requestAnimationFrame(function loop() {
+      oscillator.frequency.value = (oscillator.frequency.value + 10) % 400;
+      if (oscillator.frequency.value > 200) {
+        //oscillator.stop();
+      } else {
+        //oscillator.start();
+      }
+      requestAnimationFrame(loop);
+  })
+
 
   function reqListener () {
     var cb64 = (base64Values) => {
@@ -130,6 +170,10 @@ function create$$(element) {
       'T',
       'U',
       'z',
+      'LY',
+      'LYC',
+      'WY',
+      'WX',
       this.responseText)(
         (a,b) => a.forEach(b),
         (a,b) => {for(var i=0;i<a;++i){window.i=i;b(i)}},
@@ -159,7 +203,11 @@ function create$$(element) {
         BGMAP1+4,
         32,
         12,
-        2
+        2,
+        LY,
+        LYC,
+        WY,
+        WX,
       ));
   }
 
@@ -177,7 +225,8 @@ function create$$(element) {
     for(var n = 0; n < 10 ; ++n) {
       for (var y=0; y < height;++y) {    
 
-        memorySpace[HSYNC] && memorySpace[HSYNC](y, height); 
+        memorySpace[LY] = y;
+        memorySpace[HSYNC] && memorySpace[HSYNC](); 
         
         var scx = memorySpace[SCX];
         var scy = memorySpace[SCY];
