@@ -4,5 +4,7 @@ J(2,U,_=>m[G+j+i*T]=z++)
 m[D]=1
 F(r,b=>W(4,5,6,7,x=b)|W(0,1,2,3))
 F(l,b=>J(2,2,_=>W(a=6-4*i,a,++a,a,x=b)|W(a-=3,a,++a,a)))
-m[V]=_=>m[Y]--
-m[H]=_=>m[X]=-m[LY]+60
+dt=c=0
+m[V]=_=>dt++
+m[H]=_=>(m[X]=Math.sin(m[LY]*dt))
+m[H]=(y,h)=>{c=Math.sin(2*m[LY]/144+dt/20)*40-40;m[SCX]=(m[LY]%2?c:c);m[SCY]=c}

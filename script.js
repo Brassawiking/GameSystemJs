@@ -132,12 +132,11 @@ function powerOn(element) {
     var l = cb64('zu1mZswNAAsDcwCDAAwADQAIER+IiQAO3Mxu5t3d2Zm7u2djbg7szN3cmZ+7uTM+');
     var r = cb64('PEK5pbmlQjw=');
     
-   var size = this.responseText.length + l.length + r.length 
+    var size = this.responseText.length + l.length + r.length 
+    console.log('boot.js: ' + size + ' bytes')
     if (size > 256) {
       console.error('boot.js too big: ' + (size - 256) + ' bytes over')
       //return;
-    } else {
-      console.log('boot.js: ' + size + ' bytes')
     }
     
     for (var i = 0; i < 256; ++i) {
@@ -215,35 +214,55 @@ function powerOn(element) {
   oReq.addEventListener("load", reqListener);
   oReq.open("GET", "boot.js");
   oReq.send();
-
-  
+ 
+  memorySpace[VSYNC] = nop;
+  memorySpace[HSYNC] = nop;
+ 
   requestAnimationFrame(function update() {
     var t0 = performance.now();
+    var n = 0;
+    var y = 0;
+    var x = 0;
+
+    var scx = 0;
+    var scy = 0;
+    var bgp = 0;
+    var y1 = 0;
+         
+    var x1 = 0;
+    var tileIndex = 0;
+    var tileByteIndex = 0;
+    var tileByte = 0;
+    var colorIndex = 0;
+    var color = 0;
+    var i = 0;
+
   
-    memorySpace[VSYNC] && memorySpace[VSYNC](); 
-       
-    for(var n = 0; n < 10 ; ++n) {
-      for (var y=0; y < height;++y) {    
+      
+    for(n = 0 ; n < 4 ; ++n) {
+      for (y = 0 ; y < height ; ++y) {    
 
         memorySpace[LY] = y;
-        memorySpace[HSYNC] && memorySpace[HSYNC](); 
         
-        var scx = memorySpace[SCX];
-        var scy = memorySpace[SCY];
-        var bgp = memorySpace[BGP];
+        //y == memorySpace[LYC] && memorySpace[HSYNC](); 
+        memorySpace[HSYNC]();
+        
+        scx = memorySpace[SCX];
+        scy = memorySpace[SCY];
+        bgp = memorySpace[BGP];
               
-        var y1 = y + scy;
+        y1 = y + scy;
 
-        for (var x=0 ; x < width ; ++x) {
-          var x1 = x + scx;
+        for (x = 0 ; x < width ; ++x) {
+          x1 = x + scx;
            
-          var tileIndex = memorySpace[BGMAP1 + ((x1 >> 3) & 31) + (((y1 >> 3) & 31) << 5)];
-          var tileByteIndex = CHAR + (tileIndex*16) + ((y1 & 7) << 1) + ((x1 >> 2) & 1);
-          var tileByte = memorySpace[tileByteIndex];
-          var colorIndex = (tileByte >> ((3 - (x1 & 3)) << 1)) & 3;
-          var color = colors[(bgp >> (colorIndex << 1)) & 3]
+          tileIndex = memorySpace[BGMAP1 + ((x1 >> 3) & 31) + (((y1 >> 3) & 31) << 5)];
+          tileByteIndex = CHAR + (tileIndex*16) + ((y1 & 7) << 1) + ((x1 >> 2) & 1);
+          tileByte = memorySpace[tileByteIndex];
+          colorIndex = (tileByte >> ((3 - (x1 & 3)) << 1)) & 3;
+          color = colors[(bgp >> (colorIndex << 1)) & 3]
             
-          var i = (x + y * width) << 2;
+          i = (x + y * width) << 2;
           //clamping should remove need for masking?
           pixelBuffer.data[i+0] = (color >> 16) & 255;
           pixelBuffer.data[i+1] = (color >> 8) & 255;
@@ -252,34 +271,9 @@ function powerOn(element) {
         }
       } 
     }
-    /*
-    var sprite = tiles[4];
     
-    for (var sx=0 ; sx < 8 ; ++sx) {
-      for (var sy=0 ; sy < 8 ; ++sy) {
-        var sColorIndex = sprite[sx + (sy << 3)];
-        if (!sColorIndex) {
-          continue;
-        }
-        
-        var sColor = palette[sColorIndex]; 
-       
-        
-        var x2 = sx + posX;
-        var y2 = sy + posY;
-        if (x2 < 0 || x2 >= width || y2 < 0 || y2 >= height) {
-          continue
-        }
-        
-        var si = (x2 + y2 * width) << 2;
-        pixelBuffer.data[si+0] = (sColor >> 16) & 0xff;
-        pixelBuffer.data[si+1] = (sColor  >> 8) & 0xff;
-        pixelBuffer.data[si+2] = (sColor) & 0xff;
-        //pixelBuffer.data[si+3]= 0xff;      
-      }    
-    }
-    
-    */
+    memorySpace[VSYNC](); 
+  
 
     var t1 = performance.now();
     ctx.putImageData(pixelBuffer, 0, 0);  
@@ -290,6 +284,7 @@ function powerOn(element) {
   }); 
 }
 
+function nop() {}
 
 
 
