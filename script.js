@@ -5,12 +5,35 @@ document.body.innerHTML = `
   video-height="144"
   video-scale="3"
   >
+
+
+  <game-chip name="CPU">
+  <game-chip> 
  
+  <game-chip name="PPU">
+  <game-chip> 
+ 
+  <game-rom name="BOOT"
+            size="256"
+            src="boot.js"
+            non-strict>
+            
+    <game-data name="BITMAP_LOGO"
+               alias="l"
+               type="base64"
+               value="zu1mZswNAAsDcwCDAAwADQAIER+IiQAO3Mxu5t3d2Zm7u2djbg7szN3cmZ+7uTM+">
+    </game-data>
+
+    <game-data name="BITMAP_R_SYMBOL"
+               alias="r"
+               type="base64"
+               value="PEK5pbmlQjw=">
+    </game-data>
+    
+  <game-rom> 
  
 
-  <cpu></cpu>
-  <rom size="256" src="boot.js"></rom>
-  <memory-map bit="16"></memory-map>
+ <memory-map bit="16"></memory-map>
 
 </game-system>
 `
@@ -120,101 +143,10 @@ function powerOn(element) {
       }
       requestAnimationFrame(loop);
   })
-
-
-  function reqListener () {
-    var cb64 = (base64Values) => {
-      return atob(base64Values).split('').map(function (c) { return c.charCodeAt(0); });
-    };
   
-    var debugMsg = (msg) => {debug.innerHTML = msg;}
   
-    var l = cb64('zu1mZswNAAsDcwCDAAwADQAIER+IiQAO3Mxu5t3d2Zm7u2djbg7szN3cmZ+7uTM+');
-    var r = cb64('PEK5pbmlQjw=');
-    
-    var size = this.responseText.length + l.length + r.length 
-    console.log('boot.js: ' + size + ' bytes')
-    if (size > 256) {
-      console.error('boot.js too big: ' + (size - 256) + ' bytes over')
-      //return;
-    }
-    
-    for (var i = 0; i < 256; ++i) {
-      memorySpace[i] = this.responseText.charCodeAt(i);
-    }
-    
-    (new Function(
-      'F',
-      'I',
-      'J',
-      'debug',
-      'dma',
-      'C', 
-      'm',
-      'l',
-      'r',
-      'H',
-      'V',
-      '_VR',
-      'B',
-      'B2',
-      'C',
-      'Y',
-      'X',
-      'P',
-      'K',
-      'D',
-      'h',
-      'G',
-      'T',
-      'U',
-      'z',
-      'LY',
-      'LYC',
-      'WY',
-      'WX',
-      this.responseText)(
-        (a,b) => a.forEach(b),
-        (a,b) => {for(var i=0;i<a;++i){window.i=i;b(i)}},
-        (a,b,c) => {for(var i=0;i<a;++i){for(var j=0;j<b;++j){window.i=i;window.j=j;c(i,j)}}},
-        debugMsg,
-        (address, values) => {
-          for (var i = 0, l = values.length; i < l ; ++i) {
-            memorySpace[address + i] = values[i]; 
-          }
-        },
-        cb64,
-        memorySpace,
-        l,
-        r,
-        HSYNC,
-        VSYNC,
-        VRAM,
-        BGMAP1,
-        BGMAP2,
-        CHAR,
-        SCY,
-        SCX,
-        BGP,
-        252,
-        BGMAP1+16,
-        CHAR+16,
-        BGMAP1+4,
-        32,
-        12,
-        2,
-        LY,
-        LYC,
-        WY,
-        WX,
-      ));
-  }
+  loadAndRun(element.querySelector('game-rom'));
 
-  var oReq = new XMLHttpRequest();
-  oReq.addEventListener("load", reqListener);
-  oReq.open("GET", "boot.js");
-  oReq.send();
- 
   memorySpace[VSYNC] = nop;
   memorySpace[HSYNC] = nop;
  
@@ -239,7 +171,7 @@ function powerOn(element) {
 
   
       
-    for(n = 0 ; n < 4 ; ++n) {
+    for(n = 0 ; n < 20 ; ++n) {
       for (y = 0 ; y < height ; ++y) {    
 
         memorySpace[LY] = y;
@@ -282,9 +214,96 @@ function powerOn(element) {
     fps.innerHTML = Math.round(t2 - t0) + 'ms<br/>' + Math.round(100*(t2 - t1)/(t2 - t0)) + '% put'
     requestAnimationFrame(update);
   }); 
+
+
+
+  function loadAndRun(romElement) {
+    var romName = romElement.getAttribute('name'),
+        romSrc = romElement.getAttribute('src'),
+        romSize = parseInt(romElement.getAttribute('size'));
+
+    function reqListener () {
+      var cb64 = (base64Values) => atob(base64Values).split('').map(c => c.charCodeAt(0));
+    
+      var debugMsg = msg => debug.innerHTML = msg;
+      
+      var rawData = {};
+      var rawDataAlias = {};
+    
+      [].forEach.call(romElement.querySelectorAll('game-data'), function(gameData) {
+        rawDataAlias[gameData.getAttribute('alias')] 
+          = rawData[gameData.getAttribute('name')]
+          = cb64(gameData.getAttribute('value'));
+      });
+     
+      
+      var size = this.responseText.length;
+      Object.keys(rawData).forEach(x => size += rawData[x].length);
+      console.log(romName + ': ' + size + ' bytes')
+      if (size > romSize) {
+        console.warn(romName + ' too big: ' + (size - romSize) + ' bytes over');
+        if (!romElement.hasAttribute('non-strict')) {
+          console.error('Stopping due to strict rom mode');
+          return;
+        }
+      }
+      
+      for (var i = 0; i < romSize; ++i) {
+        memorySpace[i] = this.responseText.charCodeAt(i);
+      }
+      
+      var variables = {
+        'F': (a,b) => a.forEach(b),
+        'I': (a,b) => {for(var i=0;i<a;++i){window.i=i;b(i)}},
+        'J': (a,b,c) => {for(var i=0;i<a;++i){for(var j=0;j<b;++j){window.i=i;window.j=j;c(i,j)}}},
+        'debug': debugMsg,
+        'dma': (address, values) => {
+          for (var i = 0, l = values.length; i < l ; ++i) {
+            memorySpace[address + i] = values[i]; 
+          }
+        },
+        'C': cb64,
+        'm': memorySpace,
+        'H': HSYNC,
+        'V': VSYNC,
+        '_VR': VRAM,
+        'B': BGMAP1,
+        'B2': BGMAP2,
+        'C': CHAR,
+        'Y': SCY,
+        'X': SCX,
+        'P': BGP,
+        'K': 252,
+        'D': BGMAP1+16,
+        'h': CHAR+16,
+        'G': BGMAP1+4,
+        'T': 32,
+        'U': 12,
+        'z': 2,
+        'LY': LY,
+        'LYC': LYC,
+        'WY': WY,
+        'WX': WX,
+      }
+      
+      
+      Object.keys(rawData).forEach(x => variables[x] = rawData[x]);
+      Object.keys(rawDataAlias).forEach(x => variables[x] = rawDataAlias[x]);
+      
+      var keys = Object.keys(variables);
+      Function.apply(null, keys.concat([this.responseText])).apply(null, keys.map(x=>variables[x]));
+    }
+
+    var oReq = new XMLHttpRequest();
+    oReq.addEventListener("load", reqListener);
+    oReq.open("GET", romSrc);
+    oReq.send();
+  }
 }
 
 function nop() {}
+
+
 
 
 
