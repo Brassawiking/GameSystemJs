@@ -12,20 +12,42 @@ document.body.innerHTML = `
  
   <game-chip name="PPU">
   <game-chip> 
+
+  <game-chip name="AUDIO">
+  <game-chip> 
+
  
   <game-rom name="BOOT"
             size="256"
             src="boot.js"
-            non-strict>
+            non-strict
+            aliases="{
+              H: HSYNC,
+              V: VSYNC,
+              B: BGMAP1,
+              C: CHAR,
+              Y: SCY,
+              X: SCX,
+              P: BGP,
+              K: 252,
+              D: BGMAP1+16,
+              h: CHAR+16,
+              G: BGMAP1+4,
+              T: 32,
+              U: 12,
+              z: 2,
+              LY: LY,
+              LYC: LYC,
+              l: rawData.BITMAP_LOGO,
+              r: rawData.BITMAP_R_SYMBOL
+            }">
             
     <game-data name="BITMAP_LOGO"
-               alias="l"
                type="base64"
                value="zu1mZswNAAsDcwCDAAwADQAIER+IiQAO3Mxu5t3d2Zm7u2djbg7szN3cmZ+7uTM+">
     </game-data>
 
     <game-data name="BITMAP_R_SYMBOL"
-               alias="r"
                type="base64"
                value="PEK5pbmlQjw=">
     </game-data>
@@ -115,126 +137,129 @@ function powerOn(element) {
   
   BGP = 0xFF47;
 
-  var pixelBuffer = ctx.createImageData(width, height);
-  for (var i = 0; i < width*height; ++i) {
-    pixelBuffer.data[(i*4)+3] = 0xff;
+
+ 
+  initPPU(element.querySelector('game-chip[name="PPU"]'));
+  initAudio(element.querySelector('game-chip[name="AUDIO"]'))
+  loadAndRun(element.querySelector('game-rom[name="BOOT"]'));
+
+
+
+  function initPPU(ppuElement) {
+  
+    var pixelBuffer = ctx.createImageData(width, height);
+    for (var i = 0; i < width*height; ++i) {
+      pixelBuffer.data[(i*4)+3] = 0xff;
+    }
+
+    memorySpace[VSYNC] = nop;
+    memorySpace[HSYNC] = nop;
+  
+    requestAnimationFrame(function update() {
+      var t0 = performance.now();
+      var n = 0;
+      var y = 0;
+      var x = 0;
+
+      var scx = 0;
+      var scy = 0;
+      var bgp = 0;
+      var y1 = 0;
+          
+      var x1 = 0;
+      var tileIndex = 0;
+      var tileByteIndex = 0;
+      var tileByte = 0;
+      var colorIndex = 0;
+      var color = 0;
+      var i = 0;
+
+    
+        
+      for(n = 0 ; n < 20 ; ++n) {
+        for (y = 0 ; y < height ; ++y) {    
+
+          memorySpace[LY] = y;
+          
+          //y == memorySpace[LYC] && memorySpace[HSYNC](); 
+          memorySpace[HSYNC]();
+          
+          scx = memorySpace[SCX];
+          scy = memorySpace[SCY];
+          bgp = memorySpace[BGP];
+                
+          y1 = y + scy;
+
+          for (x = 0 ; x < width ; ++x) {
+            x1 = x + scx;
+            
+            tileIndex = memorySpace[BGMAP1 + ((x1 >> 3) & 31) + (((y1 >> 3) & 31) << 5)];
+            tileByteIndex = CHAR + (tileIndex*16) + ((y1 & 7) << 1) + ((x1 >> 2) & 1);
+            tileByte = memorySpace[tileByteIndex];
+            colorIndex = (tileByte >> ((3 - (x1 & 3)) << 1)) & 3;
+            color = colors[(bgp >> (colorIndex << 1)) & 3]
+              
+            i = (x + y * width) << 2;
+            //clamping should remove need for masking?
+            pixelBuffer.data[i+0] = (color >> 16) & 255;
+            pixelBuffer.data[i+1] = (color >> 8) & 255;
+            pixelBuffer.data[i+2] = (color) & 255;
+            //pixelBuffer.data[i+3]= 0xff;
+          }
+        } 
+      }
+      
+      memorySpace[VSYNC](); 
+    
+
+      var t1 = performance.now();
+      ctx.putImageData(pixelBuffer, 0, 0);  
+      var t2 = performance.now();
+    
+      fps.innerHTML = Math.round(t2 - t0) + 'ms<br/>' + Math.round(100*(t2 - t1)/(t2 - t0)) + '% put'
+      requestAnimationFrame(update);
+    }); 
+  
   }
 
-  var audio = new (window.AudioContext || window.webkitAudioContext)();
-  var oscillator = audio.createOscillator();
-  var gain = audio.createGain();
-  
-  oscillator.connect(gain);
-  gain.connect(audio.destination);
-  
-  oscillator.type = 'sine';
-  oscillator.frequency.value = 0;
-  gain.gain.value = 0.1
-
-
-  oscillator.start();
-
-  requestAnimationFrame(function loop() {
-      oscillator.frequency.value = (oscillator.frequency.value + 10) % 400;
-      if (oscillator.frequency.value > 200) {
-        //oscillator.stop();
-      } else {
-        //oscillator.start();
-      }
-      requestAnimationFrame(loop);
-  })
-  
-  
-  loadAndRun(element.querySelector('game-rom'));
-
-  memorySpace[VSYNC] = nop;
-  memorySpace[HSYNC] = nop;
- 
-  requestAnimationFrame(function update() {
-    var t0 = performance.now();
-    var n = 0;
-    var y = 0;
-    var x = 0;
-
-    var scx = 0;
-    var scy = 0;
-    var bgp = 0;
-    var y1 = 0;
-         
-    var x1 = 0;
-    var tileIndex = 0;
-    var tileByteIndex = 0;
-    var tileByte = 0;
-    var colorIndex = 0;
-    var color = 0;
-    var i = 0;
-
-  
-      
-    for(n = 0 ; n < 20 ; ++n) {
-      for (y = 0 ; y < height ; ++y) {    
-
-        memorySpace[LY] = y;
-        
-        //y == memorySpace[LYC] && memorySpace[HSYNC](); 
-        memorySpace[HSYNC]();
-        
-        scx = memorySpace[SCX];
-        scy = memorySpace[SCY];
-        bgp = memorySpace[BGP];
-              
-        y1 = y + scy;
-
-        for (x = 0 ; x < width ; ++x) {
-          x1 = x + scx;
-           
-          tileIndex = memorySpace[BGMAP1 + ((x1 >> 3) & 31) + (((y1 >> 3) & 31) << 5)];
-          tileByteIndex = CHAR + (tileIndex*16) + ((y1 & 7) << 1) + ((x1 >> 2) & 1);
-          tileByte = memorySpace[tileByteIndex];
-          colorIndex = (tileByte >> ((3 - (x1 & 3)) << 1)) & 3;
-          color = colors[(bgp >> (colorIndex << 1)) & 3]
-            
-          i = (x + y * width) << 2;
-          //clamping should remove need for masking?
-          pixelBuffer.data[i+0] = (color >> 16) & 255;
-          pixelBuffer.data[i+1] = (color >> 8) & 255;
-          pixelBuffer.data[i+2] = (color) & 255;
-          //pixelBuffer.data[i+3]= 0xff;
-        }
-      } 
-    }
+  function initAudio(audioElement) {
+    var audio = new (window.AudioContext || window.webkitAudioContext)();
+    var oscillator = audio.createOscillator();
+    var gain = audio.createGain();
     
-    memorySpace[VSYNC](); 
-  
-
-    var t1 = performance.now();
-    ctx.putImageData(pixelBuffer, 0, 0);  
-    var t2 = performance.now();
-  
-    fps.innerHTML = Math.round(t2 - t0) + 'ms<br/>' + Math.round(100*(t2 - t1)/(t2 - t0)) + '% put'
-    requestAnimationFrame(update);
-  }); 
+    oscillator.connect(gain);
+    gain.connect(audio.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 0;
+    gain.gain.value = 0.1
 
 
+    oscillator.start();
+
+    requestAnimationFrame(function loop() {
+        oscillator.frequency.value = (oscillator.frequency.value + 10) % 400;
+        if (oscillator.frequency.value > 200) {
+          //oscillator.stop();
+        } else {
+          //oscillator.start();
+        }
+        requestAnimationFrame(loop);
+    })
+  }
 
   function loadAndRun(romElement) {
     var romName = romElement.getAttribute('name'),
-        romSrc = romElement.getAttribute('src'),
         romSize = parseInt(romElement.getAttribute('size'));
 
     function reqListener () {
-      var cb64 = (base64Values) => atob(base64Values).split('').map(c => c.charCodeAt(0));
-    
-      var debugMsg = msg => debug.innerHTML = msg;
-      
+      var cb64 = base64Values => atob(base64Values).split('').map(c => c.charCodeAt(0));     
       var rawData = {};
-      var rawDataAlias = {};
-    
-      [].forEach.call(romElement.querySelectorAll('game-data'), function(gameData) {
-        rawDataAlias[gameData.getAttribute('alias')] 
-          = rawData[gameData.getAttribute('name')]
-          = cb64(gameData.getAttribute('value'));
-      });
+   
+      [].forEach.call(
+        romElement.querySelectorAll('game-data'), 
+        gameData => rawData[gameData.getAttribute('name')] = cb64(gameData.getAttribute('value'))
+      );
      
       
       var size = this.responseText.length;
@@ -256,39 +281,15 @@ function powerOn(element) {
         'F': (a,b) => a.forEach(b),
         'I': (a,b) => {for(var i=0;i<a;++i){window.i=i;b(i)}},
         'J': (a,b,c) => {for(var i=0;i<a;++i){for(var j=0;j<b;++j){window.i=i;window.j=j;c(i,j)}}},
-        'debug': debugMsg,
-        'dma': (address, values) => {
-          for (var i = 0, l = values.length; i < l ; ++i) {
-            memorySpace[address + i] = values[i]; 
-          }
-        },
-        'C': cb64,
-        'm': memorySpace,
-        'H': HSYNC,
-        'V': VSYNC,
-        '_VR': VRAM,
-        'B': BGMAP1,
-        'B2': BGMAP2,
-        'C': CHAR,
-        'Y': SCY,
-        'X': SCX,
-        'P': BGP,
-        'K': 252,
-        'D': BGMAP1+16,
-        'h': CHAR+16,
-        'G': BGMAP1+4,
-        'T': 32,
-        'U': 12,
-        'z': 2,
-        'LY': LY,
-        'LYC': LYC,
-        'WY': WY,
-        'WX': WX,
+        'debug': msg => debug.innerHTML = msg,
+        'm': memorySpace
       }
       
-      
+    
       Object.keys(rawData).forEach(x => variables[x] = rawData[x]);
-      Object.keys(rawDataAlias).forEach(x => variables[x] = rawDataAlias[x]);
+
+      eval('var aliases = ' + romElement.getAttribute('aliases'));
+      Object.keys(aliases).forEach(x => variables[x] = aliases[x]);
       
       var keys = Object.keys(variables);
       Function.apply(null, keys.concat([this.responseText])).apply(null, keys.map(x=>variables[x]));
@@ -296,51 +297,9 @@ function powerOn(element) {
 
     var oReq = new XMLHttpRequest();
     oReq.addEventListener("load", reqListener);
-    oReq.open("GET", romSrc);
+    oReq.open("GET", romElement.getAttribute('src'));
     oReq.send();
   }
 }
 
 function nop() {}
-
-
-
-
-
-
-
-
-/*
-CPU
-  - PC-register (bit-sized index adressering)
-    => Vilken storlek på memorybus som maximalt stöds
-  - memory-bus (bit-sized index adressering)
-    * Förutsättning för att skapa memory map
-  - instructions (fetch-decode cycle)
-  - Interupts
-
-Memory Controller ?
-
-Gated memory (VRAM)
-
-*/
-
-
-
-
-
-
-
-/*
-CPU/CHIPS
-  - instructions/code
-    * Port-mapped
-    * Registers/Workram => Infinite för tillfället
-    * Fixed or programmable. (core, sound, video, etc.)
-  - memory buses !!
-  - memory (detta är ett eget chip)
-    * ROM (instructions, static)
-    * RAM ? Låt detta vara oändligt för tillfället, får se senare ifall det går att begränsa
-    * Memory-mapped  IO
-    * IRQ ?  
-*/
