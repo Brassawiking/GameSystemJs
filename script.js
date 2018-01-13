@@ -39,7 +39,11 @@ document.body.innerHTML = `
               LY: LY,
               LYC: LYC,
               l: rawData.BITMAP_LOGO,
-              r: rawData.BITMAP_R_SYMBOL
+              r: rawData.BITMAP_R_SYMBOL,
+              
+              W: null,
+              a: null,
+              x: null,
             }">
             
     <game-data name="BITMAP_LOGO"
@@ -292,7 +296,7 @@ function powerOn(element) {
       Object.keys(aliases).forEach(x => variables[x] = aliases[x]);
       
       var keys = Object.keys(variables);
-      Function.apply(null, keys.concat([this.responseText])).apply(null, keys.map(x=>variables[x]));
+      Function.apply(null, keys.concat(["'use strict';" + this.responseText])).apply(null, keys.map(x=>variables[x]));
     }
 
     var oReq = new XMLHttpRequest();
