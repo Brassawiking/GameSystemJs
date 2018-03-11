@@ -20,31 +20,7 @@ document.body.innerHTML = `
   <game-rom name="BOOT"
             size="256"
             src="boot.js"
-            non-strict
-            aliases="{
-              H: HSYNC,
-              V: VSYNC,
-              B: BGMAP1,
-              C: CHAR,
-              Y: SCY,
-              X: SCX,
-              P: BGP,
-              K: 252,
-              D: BGMAP1+16,
-              h: CHAR+16,
-              G: BGMAP1+4,
-              T: 32,
-              U: 12,
-              z: 2,
-              LY: LY,
-              LYC: LYC,
-              l: rawData.BITMAP_LOGO,
-              r: rawData.BITMAP_R_SYMBOL,
-              
-              W: null,
-              a: null,
-              x: null,
-            }">
+            non-strict>
             
     <game-data name="BITMAP_LOGO"
                type="base64"
@@ -265,8 +241,18 @@ function powerOn(element) {
         gameData => rawData[gameData.getAttribute('name')] = cb64(gameData.getAttribute('value'))
       );
      
+      var code = this.responseText;
+      var aliasString = ''
+      var aliasCheck = /^\s*`\s*alias\s+((.|\s)*)`;?\s*/
       
-      var size = this.responseText.length;
+      var match
+      if (match = aliasCheck.exec(code)) {
+        aliasString = match[1].trim()
+        code = code.substr(match[0].length, code.length)
+      }
+      
+      
+      var size = code.length;
       Object.keys(rawData).forEach(x => size += rawData[x].length);
       console.log(romName + ': ' + size + ' bytes')
       if (size > romSize) {
@@ -278,7 +264,7 @@ function powerOn(element) {
       }
       
       for (var i = 0; i < romSize; ++i) {
-        memorySpace[i] = this.responseText.charCodeAt(i);
+        memorySpace[i] = code.charCodeAt(i);
       }
       
       var variables = {
@@ -292,7 +278,7 @@ function powerOn(element) {
     
       Object.keys(rawData).forEach(x => variables[x] = rawData[x]);
 
-      eval('var aliases = ' + romElement.getAttribute('aliases'));
+      eval(`var aliases = {${aliasString}}`);
       Object.keys(aliases).forEach(x => variables[x] = aliases[x]);
       
       var keys = Object.keys(variables);
