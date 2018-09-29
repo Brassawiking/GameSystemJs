@@ -50,5 +50,5 @@ function ROM () {return `
     yield
   }
   x = 10
-  console.log('WOHO')
+  console.log('WOHO!')
 `}
