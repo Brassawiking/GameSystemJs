@@ -1,54 +1,56 @@
 'use strict';
 
-// Main thread
-(_ => {
-  'use strict';
-  const memoryMap = {}  
-  const cpu = process_CPU(memoryMap)
-  const ppu = process_PPU(memoryMap)
+const width = 160
+const height = 144
+const scale = 3
 
-  while (!cpu.next().done) {
-    ppu.next()
-  }
-  console.log('done')
-})()
+const canvas = document.body.appendChild(document.createElement('canvas'))
+const ctx = canvas.getContext('2d')
+canvas.width = width
+canvas.height = height
+canvas.style.width = (width * scale) + 'px'
+canvas.style.height = (height * scale) + 'px'
 
+const fps = document.body.appendChild(document.createElement('div'))
+fps.style.position = 'fixed'
+fps.style.top = '0'
+fps.style.right = '0'
+fps.style.textAlign = 'right'
 
-// Worker(?) CPU
-function* process_CPU (memoryMap) {
-  'use strict';
-  const GeneratorFunction = Object.getPrototypeOf(function*(){}).constructor
-  yield
-  yield* new GeneratorFunction(
-    'memoryMap',
-    'window',
-    'document',
-    `'use strict';${ROM()}`
-  )(
-    memoryMap,
-    {},
-    {}
-  )
-}
+const pixelBuffer = ctx.createImageData(width, height)
 
-
-// Worker PPU
-function* process_PPU (memoryMap) {
-  'use strict';
-  memoryMap[10] = 0
-  yield
-  while (true) {
-    console.log('wat')
-    memoryMap[10]++
-    yield
+const worker = new Worker('sandbox2.js')
+worker.onmessage = e => {
+  switch(e.data[0]) {
+    case 'log':
+      console.log(...e.data[1])
+      break
+    case 'render':
+      render(e.data[1])
+      break
   }
 }
 
-// ROM code
-function ROM () {return `
-  while (memoryMap[10] < 5) {
-    yield
-  }
-  x = 10
-  console.log('WOHO!')
-`}
+worker.postMessage(['init', {
+  width,
+  height,
+  rom: 'rom.js'
+}])
+
+requestAnimationFrame(function frame () {
+  worker.postMessage(['frame'])
+  requestAnimationFrame(frame)
+})
+
+var prevT
+function render (buffer) {
+  requestAnimationFrame((t) => {
+    prevT = prevT || t
+    fps.innerHTML = Math.round(t - prevT) + 'ms'
+    prevT = t
+    for (var i = 0 ; i < pixelBuffer.data.length ; ++i) {
+      pixelBuffer.data[i] = buffer[i]
+    }
+    ctx.putImageData(pixelBuffer, 0, 0)
+  })
+}
